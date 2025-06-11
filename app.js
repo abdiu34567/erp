@@ -25,6 +25,7 @@ const mainView = document.getElementById("main-view");
 const welcomeMessage = document.getElementById("welcome-message");
 const remindersEnabledCheckbox = document.getElementById("reminders-enabled");
 const reminderTimesDiv = document.getElementById("reminder-times");
+const cancelUpdateBtn = document.getElementById("cancel-update-btn");
 
 // --- 3. UI Control Functions ---
 
@@ -60,7 +61,9 @@ function populateUi(config) {
 
 async function sendApiRequest(payload) {
   payload.chatId = chatId;
-  tg.MainButton.setText("Processing...").show().showProgress();
+  showLoading();
+
+  //   tg.MainButton.setText("Processing...").show().showProgress();
 
   try {
     const response = await fetch(GAS_API_URL, {
@@ -84,7 +87,9 @@ async function sendApiRequest(payload) {
     tg.showAlert(`An error occurred: ${error.message}`);
     return { success: false, error: error.message };
   } finally {
-    tg.MainButton.hideProgress().hide();
+    // tg.MainButton.hideProgress().hide();
+    // --- Always hide the overlay ---
+    hideLoading();
   }
 }
 
@@ -113,6 +118,7 @@ document
         // After user clicks OK on the alert, update the UI
         populateUi(response.config);
         showView("main");
+        cancelUpdateBtn.classList.add("hidden");
       });
     } else {
       tg.showAlert(
@@ -146,6 +152,12 @@ document.getElementById("checkout-btn").addEventListener("click", async () => {
   }
 });
 
+// --- New event listener for the cancel button ---
+cancelUpdateBtn.addEventListener("click", () => {
+  // Simply go back to the main view without saving anything
+  showView("main");
+});
+
 // Handle "Fill in My Missing Times"
 document.getElementById("reconcile-btn").addEventListener("click", async () => {
   const response = await sendApiRequest({ action: "reconcile" });
@@ -156,6 +168,7 @@ document.getElementById("reconcile-btn").addEventListener("click", async () => {
 // Handle "Update Credentials"
 document.getElementById("update-creds-btn").addEventListener("click", () => {
   showView("config");
+  cancelUpdateBtn.classList.remove("hidden");
 });
 
 // Handle saving reminder settings
@@ -195,7 +208,8 @@ async function initializeApp() {
       "Could not identify Telegram user. Please open this app from the bot's menu button."
     );
     showView("config"); // Show config as a fallback
-    return;
+    cancelUpdateBtn.classList.add("hidden");
+    // return;
   }
 
   // Instead of getting config from the URL, we now fetch it from our API
@@ -209,6 +223,20 @@ async function initializeApp() {
     // New user, or failed to get config, show the config/login view
     showView("config");
   }
+}
+
+// --- In app.js ---
+
+const loadingOverlay = document.getElementById("loading-overlay");
+
+function showLoading(message = "Processing...") {
+  loadingOverlay.querySelector("p").innerText = message;
+  loadingOverlay.classList.remove("hidden");
+  tg.MainButton.hide(); // Hide the default button to avoid confusion
+}
+
+function hideLoading() {
+  loadingOverlay.classList.add("hidden");
 }
 
 // Run the app initialization

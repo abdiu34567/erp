@@ -56,12 +56,51 @@
       .hidden {
         display: none;
       }
+      /* ... your existing styles ... */
+
+      /* Full-screen overlay */
+      #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+      }
+
+      /* Simple CSS spinner */
       .spinner {
-        /* Add spinner CSS if needed */
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--tg-theme-button-color, #007bff);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
   <body>
+    <div id="loading-overlay" class="hidden">
+      <div class="spinner"></div>
+      <p>Processing...</p>
+    </div>
+
     <div id="loading-view">
       <h2>Loading...</h2>
       <!-- You can add a nice spinner here -->
@@ -85,6 +124,7 @@
         required
       />
       <button id="save-config-btn">Save and Continue</button>
+      <button id="cancel-update-btn" class="secondary hidden">Cancel</button>
     </div>
 
     <!-- ===== MAIN ACTIONS SECTION ===== -->
