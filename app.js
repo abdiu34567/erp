@@ -21,8 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 2. UI Element References ---
   //   const loadingView = document.getElementById("loading-view");
-  const configView = document.getElementById("config-view");
-  const mainView = document.getElementById("main-view");
+  //   const configView = document.getElementById("config-view");
+  //   const mainView = document.getElementById("main-view");
   const welcomeMessage = document.getElementById("welcome-message");
   const remindersEnabledCheckbox = document.getElementById("reminders-enabled");
   const reminderTimesDiv = document.getElementById("reminder-times");
@@ -30,14 +30,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 3. UI Control Functions ---
 
-  // Ensure you also remove the loading-view logic from showView
   function showView(viewName) {
-    // loadingView.classList.add("hidden"); // Remove this line
-    configView.classList.add("hidden");
-    mainView.classList.add("hidden");
+    // hide both first
+    ["config-view", "main-view"].forEach((id) => {
+      const el = document.getElementById(id);
+      el.classList.add("hidden");
+      el.style.display = ""; // ← remove inline override
+    });
 
+    // then show the requested one
     const view = document.getElementById(`${viewName}-view`);
-    if (view) view.classList.remove("hidden");
+    if (view) {
+      view.classList.remove("hidden");
+      view.style.display = "block"; // or "", whichever you prefer
+    }
   }
 
   function populateUi(config) {
@@ -248,8 +254,8 @@ document.addEventListener("DOMContentLoaded", function () {
     showLoading("Initializing...");
 
     // We will hide all main views initially
-    // document.getElementById("config-view").style.display = "none";
-    // document.getElementById("main-view").style.display = "none";
+    document.getElementById("config-view").style.display = "none";
+    document.getElementById("main-view").style.display = "none";
 
     if (!chatId) {
       tg.showAlert(
