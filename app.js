@@ -58,28 +58,36 @@ function populateUi() {
 
 // Handle the "Save and Continue" button in the config view
 document.getElementById("save-config-btn").addEventListener("click", () => {
+  // --- STEP 1: Log that the function started ---
+  console.log("Save button clicked! The event listener is working.");
+
   const email = document.getElementById("email-input").value;
   const password = document.getElementById("password-input").value;
 
+  // --- STEP 2: Log the values you captured ---
+  console.log("Email value:", email);
+  console.log("Password value:", password);
+
   if (!email || !password) {
+    console.log("Validation failed: Email or password is empty.");
     tg.showAlert("Please enter both email and password.");
     return;
   }
 
-  tg.showConfirm(
-    "Are you sure you want to save these credentials?",
-    (isConfirmed) => {
-      if (isConfirmed) {
-        // Send data to the bot back-end to be saved
-        tg.sendData(JSON.stringify({ action: "save_config", email, password }));
-        // We assume the back-end will reply with a message and then we close.
-        // A more advanced app would wait for a success response.
-        tg.showAlert("Credentials saved! The app will now reload.");
-        // Reload the mini app to fetch the new state
-        window.location.reload();
-      }
-    }
-  );
+  const dataToSend = { action: "save_config", email, password };
+  const dataString = JSON.stringify(dataToSend);
+
+  // --- STEP 3: Log the data just before sending ---
+  console.log("Preparing to send data:", dataString);
+
+  try {
+    tg.sendData(dataString);
+    // --- STEP 4: Log success if sendData didn't crash ---
+    console.log("tg.sendData() was called successfully.");
+  } catch (e) {
+    // --- STEP 5: Log any error during the sendData call ---
+    console.error("ERROR calling tg.sendData():", e);
+  }
 });
 
 // Handle the main action buttons
