@@ -63,43 +63,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 4. API Communication ---
 
+  // In app.js
   async function sendApiRequest(payload) {
     payload.chatId = chatId;
-    showLoading();
+    // This function NO LONGER shows or hides the loader.
 
-    //   tg.MainButton.setText("Processing...").show().showProgress();
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
 
-    try {
-      const response = await fetch(GAS_API_URL, {
-        method: "POST",
-        redirect: "follow", // Keep this, it's essential
-        // --- THE CRITICAL CHANGE IS HERE ---
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8",
-        },
-        // The body is still our JSON data, but as a string.
-        body: JSON.stringify(payload),
-      });
-
-      // The rest of the function remains the same
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("API Request Failed:", error);
-      tg.showAlert(`An error occurred: ${error.message}`);
-      return { success: false, error: error.message };
-    } finally {
-      // tg.MainButton.hideProgress().hide();
-      // --- Always hide the overlay ---
-      hideLoading();
+    if (!response.ok) {
+      throw new Error(`Network response was not ok: ${response.statusText}`);
     }
+
+    return await response.json(); // Let the caller handle this response.
   }
 
   // --- 5. Event Listeners ---
-
-  // Handle the "Save and Continue" button in the config view
+  // In app.js
   document
     .getElementById("save-config-btn")
     .addEventListener("click", async () => {
@@ -111,29 +95,41 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const response = await sendApiRequest({
-        action: "save_config",
-        email: email,
-        password: password,
-      });
+      showLoading("Saving..."); // Show loader before we start
 
-      if (response && response.success) {
-        tg.showAlert("Configuration saved successfully!", () => {
-          // After user clicks OK on the alert, update the UI
-          populateUi(response.config);
-          showView("main");
-          cancelUpdateBtn.classList.add("hidden");
+      try {
+        const response = await sendApiRequest({
+          action: "save_config",
+          email: email,
+          password: password,
         });
-      } else {
-        tg.showAlert(
-          `Failed to save: ${response ? response.error : "Unknown error"}`
-        );
+
+        if (response && response.success) {
+          tg.showAlert("Configuration saved successfully!", () => {
+            populateUi(response.config);
+            showView("main");
+            cancelUpdateBtn.classList.add("hidden");
+          });
+        } else {
+          tg.showAlert(
+            `Failed to save: ${response ? response.error : "Unknown error"}`
+          );
+        }
+      } catch (error) {
+        console.error("Save config failed:", error);
+        tg.showAlert(`An error occurred: ${error.message}`);
+      } finally {
+        // This block is GUARANTEED to run.
+        hideLoading();
       }
     });
-
   // Handle the main action buttons
+  // --- REVISED checkin-btn listener ---
   document.getElementById("checkin-btn").addEventListener("click", async () => {
+    showLoading("Checking In..."); // <-- Show loader HERE
     const response = await sendApiRequest({ action: "checkin" });
+    hideLoading(); // <-- Hide loader HERE
+
     if (response && response.success) {
       tg.showAlert("You have been checked in. You can now close this window.");
       tg.close();
@@ -211,31 +207,36 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   );
 
-  // --- 6. App Initialization ---
   async function initializeApp() {
     if (!chatId) {
       tg.showAlert(
-        "Could not identify Telegram user. Please open this app from the bot's menu button."
+        "Could not identify user. Please open this app from the bot's menu button."
       );
-      showView("config"); // Show config as a fallback
-      cancelUpdateBtn.classList.add("hidden");
-      // return;
+      showView("config");
+      return;
     }
 
-    // Instead of getting config from the URL, we now fetch it from our API
-    const response = await sendApiRequest({ action: "get_config" });
+    showLoading("Loading your profile..."); // Show loader before we start
 
-    if (response && response.success && response.config.credentials) {
-      // User is configured, show the main view
-      populateUi(response.config);
-      showView("main");
-    } else {
-      // New user, or failed to get config, show the config/login view
-      showView("config");
-      cancelUpdateBtn.classList.add("hidden");
+    try {
+      const response = await sendApiRequest({ action: "get_config" });
+
+      if (response && response.success && response.config.credentials) {
+        populateUi(response.config);
+        showView("main");
+      } else {
+        showView("config");
+        cancelUpdateBtn.classList.add("hidden");
+      }
+    } catch (error) {
+      console.error("Initialization failed:", error);
+      tg.showAlert(`Failed to load your profile: ${error.message}`);
+      showView("config"); // Show config view on error
+    } finally {
+      // This block is GUARANTEED to run.
+      hideLoading();
     }
   }
-
   // --- In app.js ---
 
   const loadingOverlay = document.getElementById("loading-overlay");
