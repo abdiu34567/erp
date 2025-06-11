@@ -87,14 +87,14 @@ select {
   display: block;
 }
 
-/* Simple CSS spinner */
 .spinner {
-  --size: 42px;
+  --size: 42px; /* default size */
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  border: 4px solid transparent;
+  border: 4px solid transparent; /* baseline */
   border-top-color: var(--tg-theme-button-color, #46a2ff);
+  border-right-color: var(--tg-theme-button-color, #46a2ff); /* new */
   animation: spin 1s linear infinite, pulse 0.9s ease-in-out infinite alternate;
 }
 
