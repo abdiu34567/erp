@@ -63,23 +63,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 4. API Communication ---
 
-  // In app.js
   async function sendApiRequest(payload) {
     payload.chatId = chatId;
-    // This function NO LONGER shows or hides the loader.
+    console.log("DEBUG: sendApiRequest started with payload:", payload);
 
-    const response = await fetch(GAS_API_URL, {
-      method: "POST",
-      redirect: "follow",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const response = await fetch(GAS_API_URL, {
+        method: "POST",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      console.log("DEBUG: Fetch response received. Status:", response.status);
 
-    if (!response.ok) {
-      throw new Error(`Network response was not ok: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`);
+      }
+
+      const jsonResponse = await response.json();
+      console.log("DEBUG: JSON response parsed:", jsonResponse);
+      return jsonResponse;
+    } catch (error) {
+      console.error("DEBUG: API Request Failed inside sendApiRequest:", error);
+      // Re-throw the error to be caught by the calling function's catch block
+      throw error;
     }
-
-    return await response.json(); // Let the caller handle this response.
   }
 
   // --- 5. Event Listeners ---
@@ -207,48 +215,73 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   );
 
+  // --- 4. Main App Initialization Logic ---
   async function initializeApp() {
+    console.log("DEBUG: initializeApp() started.");
+
     if (!chatId) {
+      console.warn("DEBUG: No chatId found. Showing config view as fallback.");
       tg.showAlert(
-        "Could not identify user. Please open this app from the bot's menu button."
+        "Could not identify Telegram user. Please open this app from the bot's menu button."
       );
+      // We can't proceed without a user, so we show the config view but don't call the API.
       showView("config");
       return;
     }
 
-    showLoading("Loading your profile..."); // Show loader before we start
+    console.log("DEBUG: Calling showLoading() from initializeApp.");
+    showLoading("Loading your profile...");
 
     try {
+      console.log("DEBUG: Calling sendApiRequest for 'get_config'.");
       const response = await sendApiRequest({ action: "get_config" });
+      console.log(
+        "DEBUG: 'get_config' response received in initializeApp:",
+        response
+      );
 
       if (response && response.success && response.config.credentials) {
+        console.log(
+          "DEBUG: Config found. Populating UI and showing main view."
+        );
         populateUi(response.config);
         showView("main");
       } else {
+        console.log("DEBUG: No valid config found. Showing config view.");
         showView("config");
-        cancelUpdateBtn.classList.add("hidden");
       }
     } catch (error) {
-      console.error("Initialization failed:", error);
+      console.error("DEBUG: Error during initializeApp's try block:", error);
       tg.showAlert(`Failed to load your profile: ${error.message}`);
-      showView("config"); // Show config view on error
+      console.log("DEBUG: Showing config view as a fallback after error.");
+      showView("config");
     } finally {
-      // This block is GUARANTEED to run.
+      console.log(
+        "DEBUG: Entering initializeApp's finally block. Calling hideLoading()."
+      );
       hideLoading();
     }
   }
-  // --- In app.js ---
-
-  const loadingOverlay = document.getElementById("loading-overlay");
 
   function showLoading(message = "Processing...") {
-    loadingOverlay.querySelector("p").innerText = message;
-    loadingOverlay.classList.remove("hidden");
-    tg.MainButton.hide(); // Hide the default button to avoid confusion
+    const overlay = document.getElementById("loading-overlay");
+    if (overlay) {
+      overlay.querySelector("p").innerText = message;
+      overlay.classList.remove("hidden");
+      console.log(`DEBUG: showLoading called with message: "${message}"`);
+    } else {
+      console.error("DEBUG: Could not find loading-overlay element!");
+    }
   }
 
   function hideLoading() {
-    loadingOverlay.classList.add("hidden");
+    const overlay = document.getElementById("loading-overlay");
+    if (overlay) {
+      overlay.classList.add("hidden");
+      console.log("DEBUG: hideLoading called.");
+    } else {
+      console.error("DEBUG: Could not find loading-overlay element on hide!");
+    }
   }
 
   // Run the app initialization
