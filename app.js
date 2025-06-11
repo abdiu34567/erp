@@ -217,11 +217,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Handle "Fill in My Missing Times"
   document
-    .getElementById("reconcile-btn")
+    .getElementById("automate-day-btn")
     .addEventListener("click", async () => {
-      const response = await sendApiRequest({ action: "reconcile" });
-      // The bot will send a message back in the chat, so we just show the response here
-      tg.showAlert(response.message || response.error);
+      tg.showConfirm(
+        "This will schedule automatic check-ins and outs for the rest of today based on your saved times. Proceed?",
+        (isConfirmed) => {
+          if (isConfirmed) {
+            // Send the new action to the back-end
+            sendApiRequest({ action: "automate_day" });
+            tg.showAlert("Auto-pilot for today has been enabled!");
+          }
+        }
+      );
     });
 
   // Handle "Update Credentials"
