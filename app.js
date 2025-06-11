@@ -1,12 +1,24 @@
-// --- Initialize Telegram Web App SDK ---
+// =================================================================
+//          YeneHealth Bot Mini App - Direct API
+//                (Final, Complete Script)
+// =================================================================
+
+// --- 1. Configuration & Initialization ---
+
+// IMPORTANT: Set this to your new Google Apps Script Web App URL
+const GAS_API_URL =
+  "https://script.google.com/macros/s/AKfycbxFvFa1SrJ3bt677bIHd5NkvgML3SaqvBHHtsKLiXPY_l_TK16ZSOJfGlE4E4QT0KVj/exec";
+
+// Initialize the Telegram Mini App SDK
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand(); // Make the Mini App full-height
 
-// --- Global State ---
-let userConfig = {};
+// Get user info from Telegram to identify them in API calls
+const initData = tg.initDataUnsafe || {};
+const chatId = initData.user ? initData.user.id : null;
 
-// --- UI Element References ---
+// --- 2. UI Element References ---
 const loadingView = document.getElementById("loading-view");
 const configView = document.getElementById("config-view");
 const mainView = document.getElementById("main-view");
@@ -14,122 +26,143 @@ const welcomeMessage = document.getElementById("welcome-message");
 const remindersEnabledCheckbox = document.getElementById("reminders-enabled");
 const reminderTimesDiv = document.getElementById("reminder-times");
 
-// --- Functions to Control UI Visibility ---
+// --- 3. UI Control Functions ---
+
 function showView(viewName) {
   loadingView.classList.add("hidden");
   configView.classList.add("hidden");
   mainView.classList.add("hidden");
 
-  if (viewName === "config") {
-    configView.classList.remove("hidden");
-  } else if (viewName === "main") {
-    mainView.classList.remove("hidden");
-  } else {
-    loadingView.classList.remove("hidden");
-  }
+  const view = document.getElementById(`${viewName}-view`);
+  if (view) view.classList.remove("hidden");
 }
 
-// --- Function to Populate UI from Config ---
-function populateUi() {
-  if (userConfig.employeeName) {
-    welcomeMessage.innerText = `Welcome, ${
-      userConfig.employeeName.split(" ")[0]
-    }!`;
+function populateUi(config) {
+  if (config.employeeName) {
+    welcomeMessage.innerText = `Welcome, ${config.employeeName.split(" ")[0]}!`;
   }
-  remindersEnabledCheckbox.checked = userConfig.reminders?.enabled || false;
+  const reminders = config.reminders || {};
+  remindersEnabledCheckbox.checked = reminders.enabled || false;
   reminderTimesDiv.classList.toggle(
     "hidden",
     !remindersEnabledCheckbox.checked
   );
 
-  if (userConfig.reminders?.times) {
-    document.getElementById("time-morning").value =
-      userConfig.reminders.times.morning;
-    document.getElementById("time-lunch-out").value =
-      userConfig.reminders.times.lunchOut;
-    document.getElementById("time-lunch-in").value =
-      user.reminders.times.lunchIn;
-    document.getElementById("time-evening").value =
-      user.reminders.times.evening;
+  if (reminders.times) {
+    document.getElementById("time-morning").value = reminders.times.morning;
+    document.getElementById("time-lunch-out").value = reminders.times.lunchOut;
+    document.getElementById("time-lunch-in").value = reminders.times.lunchIn;
+    document.getElementById("time-evening").value = reminders.times.evening;
   }
 }
 
-// --- Event Handlers ---
+// --- 4. API Communication ---
 
-// Handle the "Save and Continue" button in the config view
-document.getElementById("save-config-btn").addEventListener("click", () => {
-  // --- STEP 1: Log that the function started ---
-  console.log("Save button clicked! The event listener is working.");
+async function sendApiRequest(payload) {
+  // Add the user's chat ID to every request so the back-end knows who it is
+  payload.chatId = chatId;
 
-  const email = document.getElementById("email-input").value;
-  const password = document.getElementById("password-input").value;
-
-  // --- STEP 2: Log the values you captured ---
-  console.log("Email value:", email);
-  console.log("Password value:", password);
-
-  if (!email || !password) {
-    console.log("Validation failed: Email or password is empty.");
-    tg.showAlert("Please enter both email and password.");
-    return;
-  }
-
-  const dataToSend = { action: "save_config", email, password };
-  const dataString = JSON.stringify(dataToSend);
-
-  // --- STEP 3: Log the data just before sending ---
-  console.log("Preparing to send data:", dataString);
+  // Show a loading indicator on Telegram's main button
+  tg.MainButton.setText("Processing...").show().showProgress();
 
   try {
-    tg.sendData(dataString);
-    // --- STEP 4: Log success if sendData didn't crash ---
-    console.log("tg.sendData() was called successfully.");
-  } catch (e) {
-    // --- STEP 5: Log any error during the sendData call ---
-    console.error("ERROR calling tg.sendData():", e);
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      mode: "cors", // Essential for cross-origin requests
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      redirect: "follow", // Important for GAS web apps
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    return await response.json(); // Return the JSON data from the server
+  } catch (error) {
+    console.error("API Request Failed:", error);
+    tg.showAlert(`An error occurred: ${error.message}`);
+    return { success: false, error: error.message }; // Return a standard error object
+  } finally {
+    // Always hide the loading indicator
+    tg.MainButton.hideProgress().hide();
+  }
+}
+
+// --- 5. Event Listeners ---
+
+// Handle the "Save and Continue" button in the config view
+document
+  .getElementById("save-config-btn")
+  .addEventListener("click", async () => {
+    const email = document.getElementById("email-input").value;
+    const password = document.getElementById("password-input").value;
+
+    if (!email || !password) {
+      tg.showAlert("Please enter both email and password.");
+      return;
+    }
+
+    const response = await sendApiRequest({
+      action: "save_config",
+      email: email,
+      password: password,
+    });
+
+    if (response && response.success) {
+      tg.showAlert("Configuration saved successfully!", () => {
+        // After user clicks OK on the alert, update the UI
+        populateUi(response.config);
+        showView("main");
+      });
+    } else {
+      tg.showAlert(
+        `Failed to save: ${response ? response.error : "Unknown error"}`
+      );
+    }
+  });
+
+// Handle the main action buttons
+document.getElementById("checkin-btn").addEventListener("click", async () => {
+  const response = await sendApiRequest({ action: "checkin" });
+  if (response && response.success) {
+    tg.showAlert("You have been checked in. You can now close this window.");
+    tg.close();
+  } else {
+    tg.showAlert(
+      `Check-in failed: ${response ? response.error : "Unknown error"}`
+    );
   }
 });
 
-// Handle the main action buttons
-document.getElementById("checkin-btn").addEventListener("click", () => {
-  tg.sendData(JSON.stringify({ action: "checkin" }));
-  tg.close();
-});
-document.getElementById("checkout-btn").addEventListener("click", () => {
-  tg.sendData(JSON.stringify({ action: "checkout" }));
-  tg.close();
+document.getElementById("checkout-btn").addEventListener("click", async () => {
+  const response = await sendApiRequest({ action: "checkout" });
+  if (response && response.success) {
+    tg.showAlert("You have been checked out. You can now close this window.");
+    tg.close();
+  } else {
+    tg.showAlert(
+      `Check-out failed: ${response ? response.error : "Unknown error"}`
+    );
+  }
 });
 
 // Handle "Fill in My Missing Times"
-document.getElementById("reconcile-btn").addEventListener("click", () => {
-  tg.sendData(JSON.stringify({ action: "reconcile" }));
-  tg.close(); // The bot will send messages back in the chat
+document.getElementById("reconcile-btn").addEventListener("click", async () => {
+  const response = await sendApiRequest({ action: "reconcile" });
+  // The bot will send a message back in the chat, so we just show the response here
+  tg.showAlert(response.message || response.error);
 });
 
 // Handle "Update Credentials"
 document.getElementById("update-creds-btn").addEventListener("click", () => {
-  // Just show the config view again
   showView("config");
 });
 
-// Handle changes to the reminder settings
-remindersEnabledCheckbox.addEventListener("change", () => {
-  reminderTimesDiv.classList.toggle(
-    "hidden",
-    !remindersEnabledCheckbox.checked
-  );
-  // Automatically save changes when the checkbox is toggled
-  saveSettings();
-});
-
-// Automatically save changes when a time is changed
-["time-morning", "time-lunch-out", "time-lunch-in", "time-evening"].forEach(
-  (id) => {
-    document.getElementById(id).addEventListener("change", saveSettings);
-  }
-);
-
-function saveSettings() {
+// Handle saving reminder settings
+async function saveSettings() {
   const settings = {
     enabled: remindersEnabledCheckbox.checked,
     times: {
@@ -139,32 +172,44 @@ function saveSettings() {
       evening: document.getElementById("time-evening").value,
     },
   };
-  tg.sendData(JSON.stringify({ action: "save_settings", settings }));
-  // Maybe show a subtle confirmation
-  tg.HapticFeedback.notificationOccurred("success");
+
+  // Send to back-end but don't wait or show a blocking alert
+  sendApiRequest({ action: "save_settings", settings });
+  tg.HapticFeedback.notificationOccurred("success"); // Give subtle feedback
 }
 
-// --- App Initialization ---
-function initializeApp() {
-  // The Apps Script back-end needs to pass the user's config data
-  // when launching the Mini App. This is done via the launch URL parameters.
-  const urlParams = new URLSearchParams(window.location.search);
-  const configParam = urlParams.get("config");
+remindersEnabledCheckbox.addEventListener("change", () => {
+  reminderTimesDiv.classList.toggle(
+    "hidden",
+    !remindersEnabledCheckbox.checked
+  );
+  saveSettings();
+});
+["time-morning", "time-lunch-out", "time-lunch-in", "time-evening"].forEach(
+  (id) => {
+    document.getElementById(id).addEventListener("change", saveSettings);
+  }
+);
 
-  if (configParam) {
-    try {
-      userConfig = JSON.parse(decodeURIComponent(configParam));
-    } catch (e) {
-      userConfig = {};
-    }
+// --- 6. App Initialization ---
+async function initializeApp() {
+  if (!chatId) {
+    tg.showAlert(
+      "Could not identify Telegram user. Please open this app from the bot's menu button."
+    );
+    showView("config"); // Show config as a fallback
+    return;
   }
 
-  if (userConfig.credentials) {
+  // Instead of getting config from the URL, we now fetch it from our API
+  const response = await sendApiRequest({ action: "get_config" });
+
+  if (response && response.success && response.config.credentials) {
     // User is configured, show the main view
-    populateUi();
+    populateUi(response.config);
     showView("main");
   } else {
-    // New user, show the config/login view
+    // New user, or failed to get config, show the config/login view
     showView("config");
   }
 }
