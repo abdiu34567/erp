@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatId = initData.user ? initData.user.id : null;
 
   // --- 2. UI Element References ---
-  const loadingView = document.getElementById("loading-view");
+  //   const loadingView = document.getElementById("loading-view");
   const configView = document.getElementById("config-view");
   const mainView = document.getElementById("main-view");
   const welcomeMessage = document.getElementById("welcome-message");
@@ -30,8 +30,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 3. UI Control Functions ---
 
+  // Ensure you also remove the loading-view logic from showView
   function showView(viewName) {
-    loadingView.classList.add("hidden");
+    // loadingView.classList.add("hidden"); // Remove this line
     configView.classList.add("hidden");
     mainView.classList.add("hidden");
 
@@ -92,6 +93,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 5. Event Listeners ---
   // In app.js
+
+  // --- REVISED save-config-btn listener ---
   document
     .getElementById("save-config-btn")
     .addEventListener("click", async () => {
@@ -103,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      showLoading("Saving..."); // Show loader before we start
+      showLoading("Saving..."); // Show loader
 
       try {
         const response = await sendApiRequest({
@@ -112,7 +115,11 @@ document.addEventListener("DOMContentLoaded", function () {
           password: password,
         });
 
+        // IMPORTANT: Hide the loader *before* showing the alert.
+        hideLoading();
+
         if (response && response.success) {
+          // The alert's callback will handle the UI transition.
           tg.showAlert("Configuration saved successfully!", () => {
             populateUi(response.config);
             showView("main");
@@ -124,46 +131,66 @@ document.addEventListener("DOMContentLoaded", function () {
           );
         }
       } catch (error) {
+        // Also hide the loader if an error occurs
+        hideLoading();
         console.error("Save config failed:", error);
         tg.showAlert(`An error occurred: ${error.message}`);
-      } finally {
-        // This block is GUARANTEED to run.
-        hideLoading();
       }
+      // REMOVED the finally block here. We handle hiding in the try/catch blocks.
     });
-  // Handle the main action buttons
+
   // --- REVISED checkin-btn listener ---
   document.getElementById("checkin-btn").addEventListener("click", async () => {
-    showLoading("Checking In..."); // <-- Show loader HERE
-    const response = await sendApiRequest({ action: "checkin" });
-    hideLoading(); // <-- Hide loader HERE
+    showLoading("Checking In...");
+    try {
+      const response = await sendApiRequest({ action: "checkin" });
+      hideLoading(); // Hide before showing the alert
 
-    if (response && response.success) {
-      tg.showAlert("You have been checked in. You can now close this window.");
-      tg.close();
-    } else {
-      tg.showAlert(
-        `Check-in failed: ${response ? response.error : "Unknown error"}`
-      );
+      if (response && response.success) {
+        // The alert's callback will close the window.
+        tg.showAlert(
+          "You have been checked in. You can now close this window.",
+          () => {
+            tg.close();
+          }
+        );
+      } else {
+        tg.showAlert(
+          `Check-in failed: ${response ? response.error : "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      hideLoading();
+      tg.showAlert(`An error occurred: ${error.message}`);
     }
   });
 
+  // --- REVISED checkout-btn listener ---
   document
     .getElementById("checkout-btn")
     .addEventListener("click", async () => {
-      const response = await sendApiRequest({ action: "checkout" });
-      if (response && response.success) {
-        tg.showAlert(
-          "You have been checked out. You can now close this window."
-        );
-        tg.close();
-      } else {
-        tg.showAlert(
-          `Check-out failed: ${response ? response.error : "Unknown error"}`
-        );
+      showLoading("Checking Out...");
+      try {
+        const response = await sendApiRequest({ action: "checkout" });
+        hideLoading();
+
+        if (response && response.success) {
+          tg.showAlert(
+            "You have been checked out. You can now close this window.",
+            () => {
+              tg.close();
+            }
+          );
+        } else {
+          tg.showAlert(
+            `Check-out failed: ${response ? response.error : "Unknown error"}`
+          );
+        }
+      } catch (error) {
+        hideLoading();
+        tg.showAlert(`An error occurred: ${error.message}`);
       }
     });
-
   // --- New event listener for the cancel button ---
   cancelUpdateBtn.addEventListener("click", () => {
     // Simply go back to the main view without saving anything
@@ -217,71 +244,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- 4. Main App Initialization Logic ---
   async function initializeApp() {
-    console.log("DEBUG: initializeApp() started.");
+    // Start with the spinner visible by default
+    showLoading("Initializing...");
+
+    // We will hide all main views initially
+    document.getElementById("config-view").style.display = "none";
+    document.getElementById("main-view").style.display = "none";
 
     if (!chatId) {
-      console.warn("DEBUG: No chatId found. Showing config view as fallback.");
       tg.showAlert(
-        "Could not identify Telegram user. Please open this app from the bot's menu button."
+        "Could not identify you. Please restart from the bot's menu button."
       );
-      // We can't proceed without a user, so we show the config view but don't call the API.
-      showView("config");
+      // Hide the loader and show an error message or just leave it blank
+      hideLoading();
       return;
     }
 
-    console.log("DEBUG: Calling showLoading() from initializeApp.");
-    showLoading("Loading your profile...");
-
     try {
-      console.log("DEBUG: Calling sendApiRequest for 'get_config'.");
       const response = await sendApiRequest({ action: "get_config" });
-      console.log(
-        "DEBUG: 'get_config' response received in initializeApp:",
-        response
-      );
 
       if (response && response.success && response.config.credentials) {
-        console.log(
-          "DEBUG: Config found. Populating UI and showing main view."
-        );
         populateUi(response.config);
-        showView("main");
+        showView("main"); // showView still uses classes, which is fine for the sections
       } else {
-        console.log("DEBUG: No valid config found. Showing config view.");
         showView("config");
       }
     } catch (error) {
-      console.error("DEBUG: Error during initializeApp's try block:", error);
       tg.showAlert(`Failed to load your profile: ${error.message}`);
-      console.log("DEBUG: Showing config view as a fallback after error.");
-      showView("config");
+      showView("config"); // Show config as a fallback
     } finally {
-      console.log(
-        "DEBUG: Entering initializeApp's finally block. Calling hideLoading()."
-      );
+      // This will now correctly hide the overlay after everything is done.
       hideLoading();
     }
   }
 
-  function showLoading(message = "Processing...") {
+  function showLoading(message = "Processing…") {
     const overlay = document.getElementById("loading-overlay");
-    if (overlay) {
-      overlay.querySelector("p").innerText = message;
-      overlay.classList.remove("hidden");
-      console.log(`DEBUG: showLoading called with message: "${message}"`);
-    } else {
-      console.error("DEBUG: Could not find loading-overlay element!");
-    }
+    if (!overlay) return;
+    overlay.querySelector("p").innerText = message;
+    overlay.classList.remove("hidden");
   }
 
   function hideLoading() {
     const overlay = document.getElementById("loading-overlay");
-    if (overlay) {
-      overlay.classList.add("hidden");
-      console.log("DEBUG: hideLoading called.");
-    } else {
-      console.error("DEBUG: Could not find loading-overlay element on hide!");
-    }
+    if (overlay) overlay.classList.add("hidden");
   }
 
   // Run the app initialization

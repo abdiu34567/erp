@@ -57,7 +57,7 @@ select {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
   z-index: 9999;
-  display: flex;
+  display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
