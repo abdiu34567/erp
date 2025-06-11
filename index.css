@@ -35,6 +35,17 @@ button {
 button.secondary {
   background-color: #6c757d;
 }
+button.loading {
+  display: flex; /* centre contents */
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+button.loading .btn-spinner {
+  /* slightly smaller spinner */
+  --size: 22px;
+}
 input,
 select {
   width: 95%;

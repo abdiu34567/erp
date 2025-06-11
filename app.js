@@ -268,8 +268,8 @@ document.addEventListener("DOMContentLoaded", function () {
     showLoading("Initializing...");
 
     // We will hide all main views initially
-    document.getElementById("config-view").style.display = "none";
-    document.getElementById("main-view").style.display = "none";
+    // document.getElementById("config-view").style.display = "none";
+    // document.getElementById("main-view").style.display = "none";
 
     if (!chatId) {
       tg.showAlert(
@@ -300,14 +300,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function withProgress(btn, task, loadingText = "Processing…") {
     btn.disabled = true;
+    btn.classList.add("loading");
     const original = btn.innerHTML;
     btn.innerHTML = `<span class="spinner btn-spinner"></span>`;
+
     try {
-      showLoading(loadingText);
-      return await task();
+      showLoading(loadingText); // ONE place where we show it
+      return await task(); // run caller-supplied async work
     } finally {
-      hideLoading();
+      hideLoading(); // ONE place where we hide it
       btn.disabled = false;
+      btn.classList.remove("loading");
       btn.innerHTML = original;
     }
   }
