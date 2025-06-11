@@ -101,102 +101,116 @@ document.addEventListener("DOMContentLoaded", function () {
   // In app.js
 
   // --- REVISED save-config-btn listener ---
-  document
-    .getElementById("save-config-btn")
-    .addEventListener("click", async () => {
-      const email = document.getElementById("email-input").value;
-      const password = document.getElementById("password-input").value;
+  document.getElementById("save-config-btn").addEventListener("click", () =>
+    withProgress(
+      document.getElementById("save-config-btn"),
+      async () => {
+        const email = document.getElementById("email-input").value;
+        const password = document.getElementById("password-input").value;
 
-      if (!email || !password) {
-        tg.showAlert("Please enter both email and password.");
-        return;
-      }
-
-      showLoading("Saving..."); // Show loader
-
-      try {
-        const response = await sendApiRequest({
-          action: "save_config",
-          email: email,
-          password: password,
-        });
-
-        // IMPORTANT: Hide the loader *before* showing the alert.
-        hideLoading();
-
-        if (response && response.success) {
-          // The alert's callback will handle the UI transition.
-          tg.showAlert("Configuration saved successfully!", () => {
-            populateUi(response.config);
-            showView("main");
-            cancelUpdateBtn.classList.add("hidden");
-          });
-        } else {
-          tg.showAlert(
-            `Failed to save: ${response ? response.error : "Unknown error"}`
-          );
+        if (!email || !password) {
+          tg.showAlert("Please enter both email and password.");
+          return;
         }
-      } catch (error) {
-        // Also hide the loader if an error occurs
-        hideLoading();
-        console.error("Save config failed:", error);
-        tg.showAlert(`An error occurred: ${error.message}`);
-      }
-      // REMOVED the finally block here. We handle hiding in the try/catch blocks.
-    });
+
+        showLoading("Saving..."); // Show loader
+
+        try {
+          const response = await sendApiRequest({
+            action: "save_config",
+            email: email,
+            password: password,
+          });
+
+          // IMPORTANT: Hide the loader *before* showing the alert.
+          hideLoading();
+
+          if (response && response.success) {
+            // The alert's callback will handle the UI transition.
+            tg.showAlert("Configuration saved successfully!", () => {
+              populateUi(response.config);
+              showView("main");
+              cancelUpdateBtn.classList.add("hidden");
+            });
+          } else {
+            tg.showAlert(
+              `Failed to save: ${response ? response.error : "Unknown error"}`
+            );
+          }
+        } catch (error) {
+          // Also hide the loader if an error occurs
+          hideLoading();
+          console.error("Save config failed:", error);
+          tg.showAlert(`An error occurred: ${error.message}`);
+        }
+        // REMOVED the finally block here. We handle hiding in the try/catch blocks.
+      },
+      "Saving credentials…"
+    )
+  );
 
   // --- REVISED checkin-btn listener ---
-  document.getElementById("checkin-btn").addEventListener("click", async () => {
-    showLoading("Checking In...");
-    try {
-      const response = await sendApiRequest({ action: "checkin" });
-      hideLoading(); // Hide before showing the alert
+  document.getElementById("checkin-btn").addEventListener("click", () =>
+    withProgress(
+      document.getElementById("checkin-btn"),
+      async () => {
+        showLoading("Checking In...");
+        try {
+          const response = await sendApiRequest({ action: "checkin" });
+          hideLoading(); // Hide before showing the alert
 
-      if (response && response.success) {
-        // The alert's callback will close the window.
-        tg.showAlert(
-          "You have been checked in. You can now close this window.",
-          () => {
-            tg.close();
+          if (response && response.success) {
+            // The alert's callback will close the window.
+            tg.showAlert(
+              "You have been checked in. You can now close this window.",
+              () => {
+                tg.close();
+              }
+            );
+          } else {
+            tg.showAlert(
+              `Check-in failed: ${response ? response.error : "Unknown error"}`
+            );
           }
-        );
-      } else {
-        tg.showAlert(
-          `Check-in failed: ${response ? response.error : "Unknown error"}`
-        );
-      }
-    } catch (error) {
-      hideLoading();
-      tg.showAlert(`An error occurred: ${error.message}`);
-    }
-  });
+        } catch (error) {
+          hideLoading();
+          tg.showAlert(`An error occurred: ${error.message}`);
+        }
+      },
+      "Checking in…"
+    )
+  );
 
   // --- REVISED checkout-btn listener ---
-  document
-    .getElementById("checkout-btn")
-    .addEventListener("click", async () => {
-      showLoading("Checking Out...");
-      try {
-        const response = await sendApiRequest({ action: "checkout" });
-        hideLoading();
+  document.getElementById("checkout-btn").addEventListener("click", async () =>
+    withProgress(
+      document.getElementById("checkout-btn"),
+      async () => {
+        showLoading("Checking Out...");
+        try {
+          const response = await sendApiRequest({ action: "checkout" });
+          hideLoading();
 
-        if (response && response.success) {
-          tg.showAlert(
-            "You have been checked out. You can now close this window.",
-            () => {
-              tg.close();
-            }
-          );
-        } else {
-          tg.showAlert(
-            `Check-out failed: ${response ? response.error : "Unknown error"}`
-          );
+          if (response && response.success) {
+            tg.showAlert(
+              "You have been checked out. You can now close this window.",
+              () => {
+                tg.close();
+              }
+            );
+          } else {
+            tg.showAlert(
+              `Check-out failed: ${response ? response.error : "Unknown error"}`
+            );
+          }
+        } catch (error) {
+          hideLoading();
+          tg.showAlert(`An error occurred: ${error.message}`);
         }
-      } catch (error) {
-        hideLoading();
-        tg.showAlert(`An error occurred: ${error.message}`);
-      }
-    });
+      },
+      "Checking out…"
+    )
+  );
   // --- New event listener for the cancel button ---
   cancelUpdateBtn.addEventListener("click", () => {
     // Simply go back to the main view without saving anything
@@ -284,16 +298,31 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  async function withProgress(btn, task, loadingText = "Processing…") {
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner btn-spinner"></span>`;
+    try {
+      showLoading(loadingText);
+      return await task();
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  }
+
   function showLoading(message = "Processing…") {
     const overlay = document.getElementById("loading-overlay");
     if (!overlay) return;
     overlay.querySelector("p").innerText = message;
-    overlay.classList.remove("hidden");
+    overlay.classList.add("show");
   }
 
   function hideLoading() {
     const overlay = document.getElementById("loading-overlay");
-    if (overlay) overlay.classList.add("hidden");
+    if (!overlay) return;
+    overlay.classList.remove("show");
   }
 
   // Run the app initialization

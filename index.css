@@ -46,40 +46,57 @@ select {
 .hidden {
   display: none;
 }
-/* ... your existing styles ... */
 
 /* Full-screen overlay */
 #loading-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  inset: 0; /* shorthand for top/left/right/bottom = 0 */
+  background: rgba(0, 0, 0, 0.55);
   z-index: 9999;
-  display: none;
+
+  /* animation magic */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+  display: flex; /* keep flex layout */
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: white;
+  color: #fff;
+}
+
+/* when the helper adds .show, the overlay fades in */
+#loading-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+.btn-spinner {
+  --size: 20px;
+  margin: 0 auto;
+  display: block;
 }
 
 /* Simple CSS spinner */
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--tg-theme-button-color, #007bff);
+  --size: 42px;
+  width: var(--size);
+  height: var(--size);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
+  border: 4px solid transparent;
+  border-top-color: var(--tg-theme-button-color, #46a2ff);
+  animation: spin 1s linear infinite, pulse 0.9s ease-in-out infinite alternate;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
+  to {
     transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1.08);
   }
 }
