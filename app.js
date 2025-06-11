@@ -59,34 +59,31 @@ function populateUi(config) {
 // --- 4. API Communication ---
 
 async function sendApiRequest(payload) {
-  // Add the user's chat ID to every request so the back-end knows who it is
   payload.chatId = chatId;
-
-  // Show a loading indicator on Telegram's main button
   tg.MainButton.setText("Processing...").show().showProgress();
 
   try {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
-      mode: "cors", // Essential for cross-origin requests
+      redirect: "follow", // Keep this, it's essential
+      // --- THE CRITICAL CHANGE IS HERE ---
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/plain;charset=utf-8",
       },
+      // The body is still our JSON data, but as a string.
       body: JSON.stringify(payload),
-      redirect: "follow", // Important for GAS web apps
     });
 
+    // The rest of the function remains the same
     if (!response.ok) {
-      throw new Error(`Server error: ${response.statusText}`);
+      throw new Error(`Server error: ${response.status}`);
     }
-
-    return await response.json(); // Return the JSON data from the server
+    return await response.json();
   } catch (error) {
     console.error("API Request Failed:", error);
     tg.showAlert(`An error occurred: ${error.message}`);
-    return { success: false, error: error.message }; // Return a standard error object
+    return { success: false, error: error.message };
   } finally {
-    // Always hide the loading indicator
     tg.MainButton.hideProgress().hide();
   }
 }
