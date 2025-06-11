@@ -248,8 +248,8 @@ document.addEventListener("DOMContentLoaded", function () {
     showLoading("Initializing...");
 
     // We will hide all main views initially
-    document.getElementById("config-view").style.display = "none";
-    document.getElementById("main-view").style.display = "none";
+    // document.getElementById("config-view").style.display = "none";
+    // document.getElementById("main-view").style.display = "none";
 
     if (!chatId) {
       tg.showAlert(
