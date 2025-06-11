@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YeneHealth Assistant</title>
+    <!-- The official Telegram Mini App script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      /* Basic Styling for a modern look */
+      :root {
+        --tg-theme-bg-color: #ffffff; /* Will be overridden by Telegram theme */
+        --tg-theme-text-color: #000000;
+        --tg-theme-button-color: #007bff;
+        --tg-theme-button-text-color: #ffffff;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 15px;
+        background-color: var(--tg-theme-bg-color);
+        color: var(--tg-theme-text-color);
+      }
+      .section {
+        background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+      h2 {
+        margin-top: 0;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        background-color: var(--tg-theme-button-color);
+        color: var(--tg-theme-button-text-color);
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button.secondary {
+        background-color: #6c757d;
+      }
+      input,
+      select {
+        width: 95%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+      .hidden {
+        display: none;
+      }
+      .spinner {
+        /* Add spinner CSS if needed */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading-view">
+      <h2>Loading...</h2>
+      <!-- You can add a nice spinner here -->
+    </div>
+
+    <!-- ===== LOGIN / CONFIGURATION SECTION ===== -->
+    <!-- Shown only if the user is not configured -->
+    <div id="config-view" class="section hidden">
+      <h2>Setup Your Account</h2>
+      <p>Please enter your ERP credentials. This is a one-time setup.</p>
+      <input
+        type="email"
+        id="email-input"
+        placeholder="Your ERP Email"
+        required
+      />
+      <input
+        type="password"
+        id="password-input"
+        placeholder="Your ERP Password"
+        required
+      />
+      <button id="save-config-btn">Save and Continue</button>
+    </div>
+
+    <!-- ===== MAIN ACTIONS SECTION ===== -->
+    <!-- Shown after the user is configured -->
+    <div id="main-view" class="hidden">
+      <div class="section">
+        <h2 id="welcome-message">Welcome!</h2>
+        <button id="checkin-btn">Check IN Now</button>
+        <button id="checkout-btn">Check OUT Now</button>
+      </div>
+
+      <!-- ===== SETTINGS SECTION ===== -->
+      <div class="section">
+        <h2>Settings & Automation</h2>
+
+        <p><strong>Daily Reminders</strong></p>
+        <input type="checkbox" id="reminders-enabled" />
+        <label for="reminders-enabled">Receive push notifications</label>
+
+        <div id="reminder-times" class="hidden">
+          <label>Morning Start:</label>
+          <input type="time" id="time-morning" value="08:30" />
+          <label>Lunch Out:</label>
+          <input type="time" id="time-lunch-out" value="12:30" />
+          <label>Lunch In:</label>
+          <input type="time" id="time-lunch-in" value="13:30" />
+          <label>End of Day:</label>
+          <input type="time" id="time-evening" value="17:30" />
+        </div>
+
+        <p style="margin-top: 15px"><strong>Automate Today</strong></p>
+        <button id="reconcile-btn">Fill in My Missing Times</button>
+
+        <hr style="margin: 20px 0" />
+        <button id="update-creds-btn" class="secondary">
+          Update Credentials
+        </button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
