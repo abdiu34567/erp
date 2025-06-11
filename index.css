@@ -12,6 +12,26 @@ body {
   background-color: var(--tg-theme-bg-color);
   color: var(--tg-theme-text-color);
 }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 15px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10000;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .section {
   background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
   border-radius: 10px;
@@ -81,21 +101,40 @@ select {
   opacity: 1;
   visibility: visible;
 }
-.btn-spinner {
-  --size: 20px;
-  margin: 0 auto;
-  display: block;
+/* =============== PERFECT-CIRCLE SPINNER =============== */
+.spinner,
+.spinner::before,
+.spinner::after {
+  box-sizing: border-box;
 }
 
 .spinner {
-  --size: 42px; /* default size */
+  --size: 42px; /* overridden to 22 px for .btn-spinner */
   width: var(--size);
   height: var(--size);
+  position: relative;
+  display: inline-block; /* so <span class="spinner"> works too   */
+}
+
+/* faint track (static) */
+.spinner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  border: 4px solid transparent; /* baseline */
-  border-top-color: var(--tg-theme-button-color, #46a2ff);
-  border-right-color: var(--tg-theme-button-color, #46a2ff); /* new */
-  animation: spin 1s linear infinite, pulse 0.9s ease-in-out infinite alternate;
+  border: 4px solid var(--tg-theme-button-color, #46a2ff);
+  opacity: 0.25; /* 25 % opacity track                    */
+}
+
+/* front layer (rotating) */
+.spinner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid var(--tg-theme-button-color, #46a2ff);
+  border-top-color: transparent; /* 90 ° gap */
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -103,6 +142,7 @@ select {
     transform: rotate(360deg);
   }
 }
+
 @keyframes pulse {
   from {
     transform: scale(0.9);

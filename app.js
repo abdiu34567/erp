@@ -126,12 +126,10 @@ document.addEventListener("DOMContentLoaded", function () {
           hideLoading();
 
           if (response && response.success) {
-            // The alert's callback will handle the UI transition.
-            tg.showAlert("Configuration saved successfully!", () => {
-              populateUi(response.config);
-              showView("main");
-              cancelUpdateBtn.classList.add("hidden");
-            });
+            populateUi(response.config);
+            showView("main");
+            cancelUpdateBtn.classList.add("hidden");
+            showToast("Credentials saved ✔️");
           } else {
             tg.showAlert(
               `Failed to save: ${response ? response.error : "Unknown error"}`
@@ -296,6 +294,14 @@ document.addEventListener("DOMContentLoaded", function () {
       // This will now correctly hide the overlay after everything is done.
       hideLoading();
     }
+  }
+
+  function showToast(msg, duration = 2000) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show", "toast"); // ensure base class exists
+    setTimeout(() => toast.classList.remove("show"), duration);
+    tg.HapticFeedback.notificationOccurred("success"); // nice subtle buzz
   }
 
   async function withProgress(btn, task, loadingText = "Processing…") {
