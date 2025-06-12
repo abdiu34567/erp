@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // IMPORTANT: Set this to your new Google Apps Script Web App URL
   const GAS_API_URL =
-    "https://script.google.com/macros/s/AKfycbyps0yjjcMY19J8i0cNsKbt5UAtI3YvDJR14xaTFVTiMi8rEpRHw-MoU9woCObuZ50b/exec";
+    "https://script.google.com/macros/s/AKfycbzxrP478vF8zyWfhHI9Tp0bSI5BpNxcHGulCRpEplj0NWr2LhqeZuRwcSK2td3fMykj/exec";
 
   // Initialize the Telegram Mini App SDK
   const tg = window.Telegram.WebApp;
