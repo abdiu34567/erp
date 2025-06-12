@@ -71,38 +71,65 @@ document.addEventListener("DOMContentLoaded", function () {
   // --- 4. API Communication ---
 
   async function sendApiRequest(payload) {
-    payload.chatId = chatId;
-    console.log("DEBUG: sendApiRequest started with payload:", payload);
+    payload.chatId = chatId; // add the user id
+    console.log("DEBUG sendApiRequest:", payload);
+
+    /* pack everything into a single query param called `data`
+     (safer than sprinkling many params, and matches your GAS helper) */
+    const url = `${GAS_API_URL}?data=${encodeURIComponent(
+      JSON.stringify(payload)
+    )}`;
 
     try {
-      const body = JSON.stringify(payload);
-      const response = await fetch(GAS_API_URL, {
-        method: "POST",
-        redirect: "follow",
-        mode: "no-cors",
-        // headers: { "Content-Type": "text/plain;charset=utf-8" },
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": body.length,
-          Host: "script.google.com",
-        },
-        body,
-      });
-      console.log("DEBUG: Fetch response received. Status:", response.status);
+      const response = await fetch(url, { method: "GET" }); // 💡 GET now
+      console.log("DEBUG response status:", response.status);
 
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.statusText}`);
       }
 
-      const jsonResponse = await response.json();
-      console.log("DEBUG: JSON response parsed:", jsonResponse);
-      return jsonResponse;
+      const json = await response.json();
+      console.log("DEBUG parsed JSON:", json);
+      return json;
     } catch (error) {
-      console.error("DEBUG: API Request Failed inside sendApiRequest:", error);
-      // Re-throw the error to be caught by the calling function's catch block
-      throw error;
+      console.error("DEBUG sendApiRequest failed:", error);
+      throw error; // bubble up
     }
   }
+
+  //   async function sendApiRequest(payload) {
+  //     payload.chatId = chatId;
+  //     console.log("DEBUG: sendApiRequest started with payload:", payload);
+
+  //     try {
+  //       const body = JSON.stringify(payload);
+  //       const response = await fetch(GAS_API_URL, {
+  //         method: "GET",
+  //         redirect: "follow",
+  //         mode: "no-cors",
+  //         // headers: { "Content-Type": "text/plain;charset=utf-8" },
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "Content-Length": body.length,
+  //           Host: "script.google.com",
+  //         },
+  //         body,
+  //       });
+  //       console.log("DEBUG: Fetch response received. Status:", response.status);
+
+  //       if (!response.ok) {
+  //         throw new Error(`Network response was not ok: ${response.statusText}`);
+  //       }
+
+  //       const jsonResponse = await response.json();
+  //       console.log("DEBUG: JSON response parsed:", jsonResponse);
+  //       return jsonResponse;
+  //     } catch (error) {
+  //       console.error("DEBUG: API Request Failed inside sendApiRequest:", error);
+  //       // Re-throw the error to be caught by the calling function's catch block
+  //       throw error;
+  //     }
+  //   }
 
   // --- 5. Event Listeners ---
   // In app.js
