@@ -78,6 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(GAS_API_URL, {
         method: "POST",
         redirect: "follow",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
