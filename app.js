@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("DEBUG: sendApiRequest started with payload:", payload);
 
     try {
+      const body = JSON.stringify(payload);
       const response = await fetch(GAS_API_URL, {
         method: "POST",
         redirect: "follow",
@@ -85,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "Content-Length": body.length,
           Host: "script.google.com",
         },
-        body: JSON.stringify(payload),
+        body,
       });
       console.log("DEBUG: Fetch response received. Status:", response.status);
 
