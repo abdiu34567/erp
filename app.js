@@ -79,7 +79,12 @@ document.addEventListener("DOMContentLoaded", function () {
         method: "POST",
         redirect: "follow",
         mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        // headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": body.length,
+          Host: "script.google.com",
+        },
         body: JSON.stringify(payload),
       });
       console.log("DEBUG: Fetch response received. Status:", response.status);
