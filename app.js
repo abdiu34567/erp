@@ -250,20 +250,35 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Handle "Fill in My Missing Times"
-  document
-    .getElementById("automate-day-btn")
-    .addEventListener("click", async () => {
-      tg.showConfirm(
-        "This will schedule automatic check-ins and outs for the rest of today based on your saved times. Proceed?",
-        (isConfirmed) => {
-          if (isConfirmed) {
-            // Send the new action to the back-end
-            sendApiRequest({ action: "automate_day" });
-            tg.showAlert("Auto-pilot for today has been enabled!");
-          }
-        }
-      );
-    });
+  const automateBtn = document.getElementById("automate-day-btn");
+
+  automateBtn.addEventListener("click", () => {
+    tg.showConfirm(
+      "This will schedule automatic check-ins and outs for the rest of today based on your saved times.\n\nProceed?",
+      (confirmed) => {
+        if (!confirmed) return; // user cancelled
+
+        // run the call inside the generic progress helper
+        withProgress(
+          automateBtn,
+          async () => {
+            const res = await sendApiRequest({ action: "automate_day" });
+
+            if (res && res.success) {
+              showToast("Auto-pilot enabled for today ✔️");
+            } else {
+              tg.showAlert(
+                `Failed to enable auto-pilot: ${
+                  res ? res.error : "Unknown error"
+                }`
+              );
+            }
+          },
+          "Setting auto-pilot…" // overlay message
+        );
+      }
+    );
+  });
 
   // Handle "Update Credentials"
   document.getElementById("update-creds-btn").addEventListener("click", () => {
