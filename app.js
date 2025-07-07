@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function sendApiRequest(payload) {
     payload.chatId = chatId; // add the user id
+    payload.timestamp = new Date().toISOString();
     console.log("DEBUG sendApiRequest:", payload);
 
     /* pack everything into a single query param called `data`
